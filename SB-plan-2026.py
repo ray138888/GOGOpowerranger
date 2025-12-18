@@ -1,295 +1,110 @@
 import streamlit as st
 import pandas as pd
 
-# --- 1. 頁面基礎設定 (必須放在第一行) ---
-st.set_page_config(
-    page_title="滑雪攻略與預算助手",
-    page_icon="🏂",
-    layout="centered",
-    initial_sidebar_state="auto"
-)
+# 設定頁面資訊
+st.set_page_config(page_title="2026 日本滑雪規劃師", layout="wide")
 
-# --- 2. 全域設定 ---
-EXCHANGE_RATE = 0.22  # JPY to TWD
-WINNER_MARK = " 🏆"
+st.title("🏂 SnowPath: 2026 日本滑雪特訓規劃 (14 Days)")
+st.markdown("針對目標：**Carving 技術精進** | 時間：**2026年3月**")
 
-# --- 功能 A: 課程比較 (CASI vs 私教 vs Camp) ---
-def show_ski_comparison():
-    st.header("🏂 課程大比拼")
-    st.caption("CASI vs. 私教 vs. Camp | 2024-25 日本行情")
+# 側邊欄：基本設定
+st.sidebar.header("⚙️ 行程參數設定")
+location = st.sidebar.selectbox("選擇滑雪區域", ["北海道 (二世谷/留壽都)", "長野 (白馬/志賀高原)"])
+days = st.sidebar.slider("天數", 1, 14, 14)
+currency_rate = st.sidebar.number_input("日幣匯率 (JPY to TWD)", value=0.22)
 
-    data = [
-        {
-            "比較項目": "1. 核心目的",
-            "CASI (證照課)": "學怎麼「教人」\n修正滑行基礎",
-            "私教 (Private)": "解決個人疑難雜症\n客製化修整",
-            "訓練營 (Camp)": f"提升能力 + 社交\n密集訓練技巧{WINNER_MARK}"
-        },
-        {
-            "比較項目": "2. 平均日價",
-            "CASI (證照課)": f"低\n約 ¥18,000{WINNER_MARK}",
-            "私教 (Private)": "高\n約 ¥90,000 (全日)",
-            "訓練營 (Camp)": "中\n約 ¥35,000"
-        },
-        {
-            "比較項目": "3. 客製化",
-            "CASI (證照課)": "低 (趕進度)",
-            "私教 (Private)": f"高 (完全客製){WINNER_MARK}",
-            "訓練營 (Camp)": "中 (小班制)"
-        },
-        {
-            "比較項目": "4. 技術方向",
-            "CASI (證照課)": "標準化 (Demo)",
-            "私教 (Private)": "個人風格 (Style)",
-            "訓練營 (Camp)": f"綜合地形能力{WINNER_MARK}"
-        },
-        {
-            "比較項目": "5. 社交氛圍",
-            "CASI (證照課)": "高壓 / 競爭",
-            "私教 (Private)": "封閉 / 專注",
-            "訓練營 (Camp)": f"熱血 / 交友{WINNER_MARK}"
-        },
-        {
-            "比較項目": "6. 語言門檻",
-            "CASI (證照課)": "高 (全英文)",
-            "私教 (Private)": f"無 (中文優){WINNER_MARK}",
-            "訓練營 (Camp)": "中 (有華人團)"
-        },
-        {
-            "比較項目": "7. 錄影分析",
-            "CASI (證照課)": "有 (看標準度)",
-            "私教 (Private)": "視教練而定",
-            "訓練營 (Camp)": f"極詳盡 (晚間檢討){WINNER_MARK}"
-        },
-        {
-            "比較項目": "8. 壓力值",
-            "CASI (證照課)": "高 (怕Fail)",
-            "私教 (Private)": f"低 (鼓勵為主){WINNER_MARK}",
-            "訓練營 (Camp)": "中 (同儕激勵)"
-        }
-    ]
+# --- TAB 1: 方案比較 ---
+tab1, tab2, tab3 = st.tabs(["📊 方案比較與依據", "💰 預算計算機", "📅 14天戰略行程"])
 
-    # 手機優先視圖 (Tabs 切換)
-    view_mode = st.radio("檢視模式", ["📱 卡片模式 (手機推薦)", "💻 表格模式"], horizontal=True)
-
-    if "卡片" in view_mode:
-        for item in data:
-            with st.expander(f"📌 {item['比較項目']}"):
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    st.info(f"**CASI**\n\n{item['CASI (證照課)']}")
-                with c2:
-                    st.warning(f"**私教**\n\n{item['私教 (Private)']}")
-                with c3:
-                    st.success(f"**Camp**\n\n{item['訓練營 (Camp)']}")
-    else:
-        df = pd.DataFrame(data)
-        # 修正 1: 改用 st.table 避免缺少 tabulate 套件的錯誤
-        st.table(df)
-
-
-# --- 功能 B: 組合推薦 (Green S + Black S) ---
-def show_recommendation_matrix():
-    st.header("🤝 雙人組合推薦方案")
-    st.caption("針對 Green S (你) + Black S (朋友) 的最佳解")
-
-    strategies = [
-        {
-            "title": f"A. 滑雪訓練營 (Camp){WINNER_MARK}",
-            "star": "⭐⭐⭐⭐⭐",
-            "desc": "白天分組練，晚上一起嗨。解決程度不一的最佳解。",
-            "green": "無壓力進步，跟同程度的一起摔。",
-            "black": "遇強則強，挑戰樹林與粉雪組。",
-            "price": "中 (約 ¥70,000/人)",
-            "type": "success"
-        },
-        {
-            "title": "B. 全日私教 (拆單戰術)",
-            "star": "⭐⭐⭐⭐",
-            "desc": "買一位全日教練，上午教你，下午教朋友 (3+3小時)。",
-            "green": "效率最高，1對1修姿勢。但下午要自己練。",
-            "black": "教練點撥高階技巧，不用整天陪滑綠線。",
-            "price": "高 (約 ¥90,000/雙人)",
-            "type": "warning"
-        },
-        {
-            "title": "C. CASI 考證 + 特訓",
-            "star": "⭐⭐⭐",
-            "desc": "朋友去考證照，你去上考前衝刺班。",
-            "green": "打掉重練，壓力較大，姿勢要求嚴格。",
-            "black": "腦力激盪，學習怎麼「教滑雪」。",
-            "price": "低/中 (各自報名)",
-            "type": "info"
-        }
-    ]
-
-    # 修正 2: 改寫迴圈邏輯，避免直接呼叫變數 container() 造成的 TypeError
-    for s in strategies:
-        
-        # 定義卡片內容的函式，方便重複使用
-        def card_content(strategy):
-            st.subheader(strategy['title'])
-            st.write(f"推薦度：{strategy['star']}")
-            st.markdown(f"**🛠️ 策略：** {strategy['desc']}")
-            
-            # 手機版左右並排對照
-            c1, c2 = st.columns(2)
-            c1.markdown(f"**🟢 對你 (Green):**\n\n{strategy['green']}")
-            c2.markdown(f"**⚫ 對友 (Black):**\n\n{strategy['black']}")
-            st.caption(f"💰 預估費用：{strategy['price']}")
-            st.divider()
-
-        # 根據類型使用明確的 context manager
-        if s['type'] == 'success':
-            with st.success(icon="✅"): # 這裡如果不放文字，可以放 icon
-                card_content(s)
-        elif s['type'] == 'warning':
-            with st.warning(icon="⚠️"):
-                card_content(s)
-        else:
-            with st.info(icon="ℹ️"):
-                card_content(s)
-
-
-# --- 功能 C: 3月雪場指南 ---
-def show_resort_guide():
-    st.header("🏔️ 3月初：北海道 vs. 長野")
+with tab1:
+    st.header("三大方案深度對比")
     
-    tab1, tab2 = st.tabs(["⚔️ 區域大PK", "🎯 推薦雪場"])
+    # 建立數據
+    data = {
+        "比較項目": ["適合對象", "價格 (5天課程)", "師資等級", "Carving 效益", "最大缺點", "推薦指數"],
+        "方案 A: 私人教練 (中文)": ["語言不通、需全天保母", "¥400,000+ (極高)", "Lv1-Lv2 (參差不齊)", "⭐⭐⭐ (看教練程度)", "太貴且教練可能不會高階刻滑", "🔴 低"],
+        "方案 B: CASI Lv1 課程": ["想考證照、轉職", "¥115,000 (英文) - ¥250,000 (中文)", "Lv2-Lv3 (培訓師)", "⭐⭐ (非考試重點)", "都在練低速搓雪與教學理論", "🟡 中"],
+        "方案 C: Riding Camp (推薦)": ["想變強、預算有限、滑行導向", "¥150,000 (高CP值)", "Lv3-Lv4 (考官等級)", "⭐⭐⭐⭐⭐ (專項訓練)", "全英文授課、身體疲勞度高", "🟢 高 (Best Buy)"]
+    }
+    df = pd.DataFrame(data)
+    st.table(df)
 
-    with tab1:
-        c1, c2 = st.columns(2)
-        with c1:
-            st.info("### ❄️ 北海道")
-            st.markdown("""
-            * **優勢:** 3月仍有粉雪、雪道全開。
-            * **劣勢:** 交通貴、住宿貴。
-            * **適合:** 想要最好雪質的你們。
-            """)
-        with c2:
-            st.warning("### ☀️ 長野")
-            st.markdown("""
-            * **優勢:** 晴天率高、交通方便(新幹線)。
-            * **劣勢:** 山腳可能是思樂冰(濕雪)。
-            * **適合:** 想要觀光+滑雪的你們。
-            """)
+    st.info("💡 **決策依據：** 基於 CASI 官方規範，Lv1 考試重點為「基礎搓雪 (Intermediate Sliding)」，而 Riding Camp 使用的是 Lv2/Lv3 的「刻滑標準 (Carved Turns)」。")
 
-    with tab2:
-        resorts = [
-            {"name": "北海道 - 留壽都", "rank": "⭐⭐⭐⭐⭐", "text": "壓雪與樹林並存，最不吵架的雪場。"},
-            {"name": "北海道 - 二世谷", "rank": "⭐⭐⭐⭐", "text": "夜生活豐富，外國人多，但人擠人。"},
-            {"name": "長野 - 志賀高原", "rank": "⭐⭐⭐⭐", "text": "海拔最高，3月長野雪質擔當。"},
-            {"name": "長野 - 白馬栂池", "rank": "⭐⭐⭐", "text": "超寬緩坡適合新手，但3月雪況較濕。"},
-        ]
+# --- TAB 2: 預算計算 ---
+with tab2:
+    st.header("💸 14天 雙人總預算預估")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("參數輸入")
+        # 根據地點調整預設價格
+        base_accom = 30000 if "北海道" in location else 20000
+        base_lift = 9000 if "北海道" in location else 7000
         
-        for r in resorts:
-            with st.expander(f"{r['name']} ({r['rank']})"):
-                st.write(r['text'])
-
-
-# --- 功能 D: 預算計算機 (New!) ---
-def show_budget_calculator():
-    st.header("💰 滑雪預算計算機")
-    st.caption("快速計算雙人日本滑雪總花費")
-
-    with st.form("budget_form"):
-        st.subheader("1. 基礎設定")
-        c1, c2 = st.columns(2)
-        days = c1.number_input("滑雪天數", min_value=1, value=5)
-        people = c2.number_input("人數", min_value=1, value=2)
-
-        st.subheader("2. 費用估算 (單人/單位: TWD/JPY)")
+        camp_cost = st.number_input("Camp 課程費用 (每人)", value=150000)
+        accom_daily = st.number_input("雙人房每晚房價 (JPY)", value=base_accom)
+        flight_cost = st.number_input("機票費用 (每人/台幣)", value=22000)
+        food_daily = st.number_input("每日餐費 (每人/JPY)", value=7000)
+        lift_daily = st.number_input("每日雪票 (每人/JPY)", value=base_lift)
         
-        # 機票 (台幣)
-        flight_twd = st.number_input("✈️ 來回機票 (TWD/人)", value=20000, step=1000)
+    with col2:
+        st.subheader("計算結果 (每人)")
         
-        # 住宿 (日幣)
-        hotel_jpy = st.number_input("🏨 住宿每晚 (JPY/人)", value=15000, step=1000, help="二世谷約2萬，長野約1-1.5萬")
-        
-        # 雪票 (日幣)
-        lift_jpy = st.number_input("🎫 雪票每日 (JPY/人)", value=8000, step=500)
-
-        # 餐飲 (日幣)
-        food_jpy = st.number_input("🍜 餐飲每日 (JPY/人)", value=5000, step=500)
-
-        # 課程選擇
-        st.subheader("3. 課程費用")
-        lesson_type = st.selectbox("選擇課程方案", ["不請教練", "A. 訓練營 (Camp)", "B. 全日私教 (拆單)", "C. CASI 考證團"])
-        
-        lesson_cost_jpy = 0
-        if lesson_type == "A. 訓練營 (Camp)":
-            lesson_cost_jpy = st.number_input("Camp 總費用 (JPY/人)", value=70000)
-            st.caption("Camp 通常是算總價 (含多日教學)")
-        elif lesson_type == "B. 全日私教 (拆單)":
-            daily_rate = st.number_input("私教每日費用 (JPY/教練)", value=90000)
-            lesson_days = st.number_input("請教練天數", min_value=1, max_value=days, value=2)
-            # 私教是「總價除以人數」
-            lesson_cost_jpy = (daily_rate * lesson_days) / people
-            st.caption(f"說明：{daily_rate} x {lesson_days}天 ÷ {people}人 = {lesson_cost_jpy:.0f}/人")
-        elif lesson_type == "C. CASI 考證團":
-            lesson_cost_jpy = st.number_input("課程報名費 (JPY/人)", value=25000)
-
-        submitted = st.form_submit_button("開始計算 🧮")
-
-    if submitted:
         # 計算邏輯
-        total_jpy_per_person = (hotel_jpy * days) + (lift_jpy * days) + (food_jpy * days) + lesson_cost_jpy
-        total_twd_per_person = flight_twd + (total_jpy_per_person * EXCHANGE_RATE)
-        grand_total_twd = total_twd_per_person * people
-
-        st.divider()
-        st.markdown(f"### 📊 計算結果 (匯率 {EXCHANGE_RATE})")
+        total_accom_jpy = (accom_daily * (days - 1)) / 2
+        total_lift_jpy = lift_daily * (days - 2) # 扣除頭尾移動日
+        total_food_jpy = food_daily * days
+        total_camp_jpy = camp_cost
         
-        m1, m2, m3 = st.columns(3)
-        m1.metric("每人總花費 (TWD)", f"${total_twd_per_person:,.0f}")
-        m2.metric("雙人總預算 (TWD)", f"${grand_total_twd:,.0f}")
-        m3.metric("課程佔比", f"{(lesson_cost_jpy * EXCHANGE_RATE / total_twd_per_person):.1%}")
-
-        # 顯示詳細清單
-        with st.expander("查看詳細費用結構"):
-            details = {
-                "項目": ["機票", "住宿", "雪票", "餐飲", "課程"],
-                "金額 (TWD/人)": [
-                    flight_twd,
-                    hotel_jpy * days * EXCHANGE_RATE,
-                    lift_jpy * days * EXCHANGE_RATE,
-                    food_jpy * days * EXCHANGE_RATE,
-                    lesson_cost_jpy * EXCHANGE_RATE
-                ]
-            }
-            st.dataframe(pd.DataFrame(details))
-
-
-# --- 主程式導航 ---
-def main():
-    # 側邊欄選單
-    st.sidebar.title("功能選單")
-    page = st.sidebar.radio(
-        "前往",
-        ["首頁", "1. 課程大比拼", "2. 雙人組合推薦", "3. 雪場指南", "4. 預算計算機"]
-    )
-
-    if page == "首頁":
-        st.title("⛷️ 雙人滑雪攻略 App")
-        st.write("歡迎！這是專為 **Green S (你)** 與 **Black S (朋友)** 設計的滑雪決策助手。")
-        st.info("👈 請點擊左側選單開始規劃你的 3 月滑雪行！")
+        total_jpy = total_accom_jpy + total_lift_jpy + total_food_jpy + total_camp_jpy
+        total_twd = (total_jpy * currency_rate) + flight_cost
         
-        st.markdown("### 快速檢視你的狀態")
-        c1, c2 = st.columns(2)
-        c1.success("**你 (Green S)**\n\n目標：建立信心、進階紅線、修正站姿")
-        c2.error("**朋友 (Black S)**\n\n目標：樹林滑行、刻滑風格、教學挑戰")
+        st.metric("每人總花費 (TWD)", f"${int(total_twd):,}")
+        st.write(f"🇯🇵 日幣總支出: ¥{int(total_jpy):,}")
+        
+        # 圓餅圖數據
+        cost_data = pd.DataFrame({
+            "項目": ["住宿", "雪票", "餐飲", "課程(Camp)", "機票(TWD換算)"],
+            "金額(TWD)": [
+                total_accom_jpy * currency_rate,
+                total_lift_jpy * currency_rate,
+                total_food_jpy * currency_rate,
+                total_camp_jpy * currency_rate,
+                flight_cost
+            ]
+        })
+        st.bar_chart(cost_data.set_index("項目"))
 
-    elif page == "1. 課程大比拼":
-        show_ski_comparison()
+# --- TAB 3: 行程規劃 ---
+with tab3:
+    st.header("📅 14天 分級特訓行程表")
     
-    elif page == "2. 雙人組合推薦":
-        show_recommendation_matrix()
+    st.markdown("""
+    **核心策略：** * 🟢 **你 (綠線S)：** 參加 Intermediate Camp -> 目標紅線S
+    * ⚫ **朋友 (黑線S)：** 參加 Advanced Carving Camp -> 目標高速 Carving
+    """)
     
-    elif page == "3. 雪場指南":
-        show_resort_guide()
-        
-    elif page == "4. 預算計算機":
-        show_budget_calculator()
+    schedule = {
+        "Day": [f"Day {i}" for i in range(1, 15)],
+        "主題": [
+            "抵達 & 移動", "暖身日 (Warm up)", "Camp Day 1 (基礎)", "Camp Day 2 (進階)", 
+            "Camp Day 3 (應用)", "Camp Day 4 (動態)", "Camp Day 5 (結業)", "🛌 完全休息日",
+            "自主練習 (模仿)", "自主練習 (挑戰)", "互相錄影日", "半日滑 / 觀光", "Fun Run 驗收", "回程"
+        ],
+        "重點提示": [
+            "入住、租裝備", "適應日本雪況，找回腳感", "分班上課：你修站姿 / 他修細節", "你練膽量 / 他練發力",
+            "你練紅線穩定 / 他練施壓", "你練刃咬雪 / 他練 Cross-under", "驗收成果 & 影片分析", "肌肉修復，去泡溫泉",
+            "朋友帶你滑，模仿他的新動作", "嘗試更陡的坡 / 更快的速度", "拍攝對比影片 (Day2 vs Day11)", "保留體力，下午逛街",
+            "享受滑雪，不練功了！", "前往機場"
+        ]
+    }
+    
+    st.dataframe(pd.DataFrame(schedule), hide_index=True, use_container_width=True)
+    
+    st.warning("⚠️ 注意：3月的日本下午容易出現思樂冰 (Slush)，建議練功集中在 08:30 - 12:30 硬雪時段。")
 
-if __name__ == "__main__":
-    main()
+# Footer
+st.markdown("---")
+st.caption("Designed by Gemini for 2026 Ski Trip Planning")
