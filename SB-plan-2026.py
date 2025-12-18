@@ -5,7 +5,7 @@ import pandas as pd
 st.set_page_config(
     page_title="滑雪攻略與預算助手",
     page_icon="🏂",
-    layout="centered", # 手機版建議用 centered，閱讀體驗較佳
+    layout="centered",
     initial_sidebar_state="auto"
 )
 
@@ -84,7 +84,8 @@ def show_ski_comparison():
                     st.success(f"**Camp**\n\n{item['訓練營 (Camp)']}")
     else:
         df = pd.DataFrame(data)
-        st.markdown(df.to_markdown(index=False))
+        # 修正 1: 改用 st.table 避免缺少 tabulate 套件的錯誤
+        st.table(df)
 
 
 # --- 功能 B: 組合推薦 (Green S + Black S) ---
@@ -122,26 +123,32 @@ def show_recommendation_matrix():
         }
     ]
 
+    # 修正 2: 改寫迴圈邏輯，避免直接呼叫變數 container() 造成的 TypeError
     for s in strategies:
-        # 使用不同顏色的容器區分推薦度
-        if s['type'] == 'success':
-            container = st.success
-        elif s['type'] == 'warning':
-            container = st.warning
-        else:
-            container = st.info
         
-        with container():
-            st.subheader(s['title'])
-            st.write(f"推薦度：{s['star']}")
-            st.markdown(f"**🛠️ 策略：** {s['desc']}")
+        # 定義卡片內容的函式，方便重複使用
+        def card_content(strategy):
+            st.subheader(strategy['title'])
+            st.write(f"推薦度：{strategy['star']}")
+            st.markdown(f"**🛠️ 策略：** {strategy['desc']}")
             
             # 手機版左右並排對照
             c1, c2 = st.columns(2)
-            c1.markdown(f"**🟢 對你 (Green):**\n\n{s['green']}")
-            c2.markdown(f"**⚫ 對友 (Black):**\n\n{s['black']}")
-            st.caption(f"💰 預估費用：{s['price']}")
+            c1.markdown(f"**🟢 對你 (Green):**\n\n{strategy['green']}")
+            c2.markdown(f"**⚫ 對友 (Black):**\n\n{strategy['black']}")
+            st.caption(f"💰 預估費用：{strategy['price']}")
             st.divider()
+
+        # 根據類型使用明確的 context manager
+        if s['type'] == 'success':
+            with st.success(icon="✅"): # 這裡如果不放文字，可以放 icon
+                card_content(s)
+        elif s['type'] == 'warning':
+            with st.warning(icon="⚠️"):
+                card_content(s)
+        else:
+            with st.info(icon="ℹ️"):
+                card_content(s)
 
 
 # --- 功能 C: 3月雪場指南 ---
